@@ -21,6 +21,7 @@ import traceback
 import regex
 import yaml
 from aiohttp import ClientSession, ClientTimeout
+import aiohttp
 
 from immichpy.client.generated import (
     AddUsersDto,
@@ -175,7 +176,9 @@ class ApiClient:
         :raises: ApiException or Exception on failure.
         """
         async def call() -> T:
-            session = ClientSession(timeout=ClientTimeout(total=self.api_timeout))
+            ssl_context = False if self.insecure else None
+            connector = aiohttp.TCPConnector(ssl=ssl_context)
+            session = ClientSession(timeout=ClientTimeout(total=self.api_timeout), connector=connector)
             try:
                 async with AsyncClient(api_key=self.api_key, base_url=self.api_url, http_client=session) as client:
                     return await fn(client)
@@ -2382,4 +2385,5 @@ for config in configs:
         folder_album_creator.run()
     except (AlbumMergeError, AlbumModelValidationError, HTTPError, ValueError, AssertionError) as e:
         logging.fatal("Fatal error while processing configuration!")
+
         logging.fatal(e)
